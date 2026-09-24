@@ -8,6 +8,8 @@
 		# Behind a reverse proxy on a private network, log the real client IP
 		# (X-Forwarded-For) and trust X-Forwarded-Proto for HTTPS detection.
 		trusted_proxies static private_ranges
+		# Client IP = the right-most untrusted address (can't be spoofed).
+		trusted_proxies_strict
 	}
 }
 
@@ -20,12 +22,12 @@
 		max_size {$UPLOAD_MAX_SIZE}
 	}
 
-	header {
-		?X-Content-Type-Options nosniff
-		?X-Frame-Options SAMEORIGIN
-		?Referrer-Policy strict-origin-when-cross-origin
-		-Server
-	}
+	# One directive per header: in a single `header { }` block, Caddy applies
+	# the "?" (set if missing) fields together, only when all are missing.
+	header ?X-Content-Type-Options nosniff
+	header ?X-Frame-Options SAMEORIGIN
+	header ?Referrer-Policy strict-origin-when-cross-origin
+	header -Server
 
 	# `route` keeps the rules in the order written below.
 	route {
@@ -74,7 +76,9 @@
 		}
 		respond @php_forbidden 403
 
+		# PHP's REMOTE_ADDR is the client, not the proxy in front (e.g. Traefik).
 		php_fastcgi magento:9000 {
+			env REMOTE_ADDR {client_ip}
 			read_timeout 600s
 		}
 		file_server

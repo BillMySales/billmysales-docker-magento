@@ -257,6 +257,8 @@ Security
   the admin, custom admin path, only Magento's PHP entry points executable,
   private media and the web setup blocked, PHP version not exposed, security
   headers.
+- PHP gets the real client IP in `REMOTE_ADDR` (logs, login protection) also
+  behind Traefik or another proxy on a private network.
 - Only Caddy (and Mailpit in development) publishes ports; the database and
   OpenSearch are internal (OpenSearch without its security plugin, so never
   publish it). `HTTP_BIND` defaults to `127.0.0.1`.
