@@ -1,0 +1,58 @@
+# Keep the stack's data in local directories instead of named volumes, so it
+# is visible from the host (and easy to include in host-level backups).
+#
+# In .env:
+#   COMPOSE_FILE=compose.yaml:overrides/local-dirs.yaml
+#   DATA_DIR=./data        # optional, default ./data (relative to compose.yaml)
+#
+# Only the directories you keep here change; delete the lines you don't need
+# (e.g. keep just `media` and `backups`). Existing data in the named volumes
+# is NOT moved: switch before the first `up`, or restore a backup afterwards.
+# On macOS, bind mounts are slower than named volumes (a lot for `code`: about
+# 1 GB of files), and files created by root show as root-owned (writes still
+# work). On Linux, Docker creates missing directories as root and the
+# containers fix ownership themselves, except OpenSearch (UID 1000): run
+# `mkdir -p data/opensearch && sudo chown 1000:1000 data/opensearch` first.
+# Backup files are root-owned with mode 0600.
+
+services:
+  db:
+    volumes:
+      - ${DATA_DIR:-./data}/db:/var/lib/mysql
+
+  opensearch:
+    volumes:
+      - ${DATA_DIR:-./data}/opensearch:/usr/share/opensearch/data
+
+  setup:
+    volumes:
+      - ${DATA_DIR:-./data}/code:/var/www/magento
+      - ${DATA_DIR:-./data}/media:/var/www/magento/pub/media
+
+  magento:
+    volumes:
+      - ${DATA_DIR:-./data}/code:/var/www/magento
+      - ${DATA_DIR:-./data}/media:/var/www/magento/pub/media
+
+  cron:
+    volumes:
+      - ${DATA_DIR:-./data}/code:/var/www/magento
+      - ${DATA_DIR:-./data}/media:/var/www/magento/pub/media
+
+  caddy:
+    volumes:
+      - ${DATA_DIR:-./data}/code:/var/www/magento:ro
+      - ${DATA_DIR:-./data}/media:/var/www/magento/pub/media:ro
+      - ${DATA_DIR:-./data}/caddy/data:/data
+      - ${DATA_DIR:-./data}/caddy/config:/config
+
+  backup:
+    volumes:
+      - ${DATA_DIR:-./data}/code:/var/www/magento
+      - ${DATA_DIR:-./data}/media:/var/www/magento/pub/media
+      - ${DATA_DIR:-./data}/backups:/backups
+
+  console:
+    volumes:
+      - ${DATA_DIR:-./data}/code:/var/www/magento
+      - ${DATA_DIR:-./data}/media:/var/www/magento/pub/media

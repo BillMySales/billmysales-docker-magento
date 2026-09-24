@@ -1,0 +1,97 @@
+# Caddy in front of the Mage-OS PHP-FPM container.
+# Translated from Magento's nginx.conf.sample (in the project root).
+{
+	# No admin API: config is static, reloads happen by restarting the container.
+	admin off
+
+	servers {
+		# Behind a reverse proxy on a private network, log the real client IP
+		# (X-Forwarded-For) and trust X-Forwarded-Proto for HTTPS detection.
+		trusted_proxies static private_ranges
+	}
+}
+
+(magento) {
+	root * /var/www/magento/pub
+	encode zstd gzip
+
+	# Same variable as upload_max_filesize/post_max_size in config/php/php.ini.
+	request_body {
+		max_size {$UPLOAD_MAX_SIZE}
+	}
+
+	header {
+		?X-Content-Type-Options nosniff
+		?X-Frame-Options SAMEORIGIN
+		?Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# `route` keeps the rules in the order written below.
+	route {
+		# Dotfiles (.htaccess, .user.ini, .git...), except .well-known.
+		@hidden {
+			path /.*
+			not path /.well-known/*
+		}
+		respond @hidden 403
+
+		# Web setup and updater (not used: installs and upgrades run from the
+		# command line in `setup`), private media and XML files.
+		@private {
+			path /setup /setup/* /update /update/*
+			path /media/customer/* /media/customer_address/* /media/downloadable/* /media/import/* /media/custom_options/*
+		}
+		respond @private 403
+		@private_xml path_regexp ^/(media/theme_customization|errors)/.*\.xml$
+		respond @private_xml 403
+
+		# Static files: strip the deployment version (/static/version123/...),
+		# generate missing ones through static.php. `uri` (not `rewrite`) for the
+		# first step: Caddy applies only the first matching `rewrite`.
+		uri path_regexp ^/static/version\d*/ /static/
+		@static_missing {
+			path_regexp static_missing ^/static/(.*)$
+			not file
+		}
+		rewrite @static_missing /static.php?resource={re.static_missing.1}
+		@static_file path /static/*
+		header @static_file Cache-Control "public, max-age=31536000, immutable"
+
+		# Media: missing files (e.g. resized images) through get.php.
+		@media_missing {
+			path /media/*
+			not file
+		}
+		rewrite @media_missing /get.php?{query}
+		@media_file path /media/*
+		header @media_file Cache-Control "public, max-age=31536000"
+
+		# Only Magento's entry points may run PHP.
+		@php_forbidden {
+			path *.php *.phtml
+			not path /index.php /get.php /static.php /health_check.php /errors/report.php /errors/404.php /errors/503.php
+		}
+		respond @php_forbidden 403
+
+		php_fastcgi magento:9000 {
+			read_timeout 600s
+		}
+		file_server
+	}
+}
+
+# Public site. SITE_ADDRESS is ":80" for plain HTTP (local, or behind another
+# proxy) or a domain name, which makes Caddy obtain and renew a certificate
+# automatically ("localhost" uses Caddy's internal CA).
+{$SITE_ADDRESS} {
+	import magento
+	log {
+		output stdout
+	}
+}
+
+# Internal-only site (port not published) for the container healthcheck.
+:8080 {
+	import magento
+}

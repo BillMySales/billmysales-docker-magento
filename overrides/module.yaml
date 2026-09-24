@@ -1,0 +1,40 @@
+# Develop a module live: mount it from a local directory into app/code and run
+# Magento in developer mode (code and static files generated on demand, file
+# changes picked up without rebuilding the image). `setup` enables the module
+# and runs setup:upgrade.
+#
+# In .env:
+#   COMPOSE_FILE=compose.yaml:overrides/module.yaml
+#   MODULE_PATH=../my-module/Vendor/Module   # directory with registration.php
+#   MODULE_DIR=Vendor/Module                 # path under app/code
+#   MODULE_NAME=Vendor_Module                # module name (etc/module.xml)
+#
+# Developer mode is slower (first page views generate code and static files).
+# Removing this override switches back to production mode on the next `up`.
+# To ship the module to production, add it to the image instead.
+
+x-module: &module ${MODULE_PATH:?Set MODULE_PATH in .env}:/var/www/magento/app/code/${MODULE_DIR:?Set MODULE_DIR in .env}
+
+services:
+  setup:
+    environment:
+      MAGE_MODE: developer
+      MAGE_ENABLE_MODULES: ${MODULE_NAME:?Set MODULE_NAME in .env}
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+    volumes:
+      - *module
+  magento:
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+    volumes:
+      - *module
+  cron:
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+    volumes:
+      - *module
+  console:
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+    volumes:
+      - *module
