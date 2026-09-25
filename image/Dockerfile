@@ -9,7 +9,10 @@ ARG PHP_VERSION=8.5
 # ---------------------------------------------------------------------------
 FROM php:${PHP_VERSION}-fpm-alpine AS base
 RUN set -eux; \
-    apk add --no-cache su-exec; \
+    # icu-data-full: locale data for intl (Alpine ships English only):
+    # Magento formats prices, numbers and dates with intl, so any locale
+    # but en_US would read "CLP 9,990" instead of e.g. "$9.990" (es_CL).
+    apk add --no-cache su-exec icu-data-full; \
     apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS freetype-dev icu-dev libjpeg-turbo-dev libpng-dev libwebp-dev \
         libxml2-dev libxslt-dev libzip-dev linux-headers; \

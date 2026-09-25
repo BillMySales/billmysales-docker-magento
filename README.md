@@ -20,7 +20,10 @@ Versions follow Magento 2.4.9's system requirements: PHP 8.5, MariaDB 12.3
 There is no maintained Mage-OS Docker image (`mage-os/dockerfiles` is empty),
 so `image/Dockerfile` builds one: Mage-OS installed with Composer from
 `repo.mage-os.org`, dependency injection compiled and static content
-deployed at build time, so the image is ready for production mode (777 MB).
+deployed at build time, so the image is ready for production mode (~810 MB).
+It includes `icu-data-full` (Alpine's ICU has English locale data only):
+Magento formats prices, numbers and dates with `intl`, so with any locale
+but `en_US` CLP would read `CLP 9,990` instead of `$9.990` (`es_CL`).
 
 Requirements
 ------------
