@@ -256,6 +256,11 @@ Notes:
 Security
 --------
 
+- Client IP headers: PHP gets only the real client IP (as Caddy sees it) in
+  `REMOTE_ADDR`, `X-Forwarded-For` and `X-Real-IP`, and no `Client-Ip` or
+  `Cf-Connecting-Ip` (a client could forge them): Magento stores
+  `X-Forwarded-For` with each order and reads `Client-Ip`/`X-Forwarded-For` in
+  places.
 - No default secrets: compose fails if the required passwords are missing. The
   development template uses public passwords; never use it on a server.
 - PHP errors are never shown to visitors (`display_errors` off unless
