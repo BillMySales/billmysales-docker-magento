@@ -159,14 +159,18 @@ Files are readable by their owner only. Search indices are rebuilt by
 reindexing.
 
 ```shell
-docker compose run --rm backup now                  # back up now
-docker compose run --rm backup list                 # list timestamps
+docker compose run --rm --no-deps backup now                  # back up now
+docker compose run --rm --no-deps backup list                 # list timestamps
 docker compose stop magento cron                    # recommended while restoring
-docker compose run --rm backup restore <timestamp>  # restore DB, media and env.php
+docker compose run --rm --no-deps backup restore <timestamp>  # restore DB, media and env.php
 docker compose up -d
 docker compose run --rm console cache:flush
 docker compose run --rm console indexer:reindex     # if search results are stale
 ```
+
+`--no-deps` keeps the command from starting `setup` first (with damaged
+data `setup` fails and the restore would never run); the database must
+be running (`docker compose up -d db` if the stack is down).
 
 Overrides
 ---------
