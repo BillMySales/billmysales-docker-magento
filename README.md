@@ -16,7 +16,8 @@ deployments (a single server). Maintained by
 | Mailpit    | `axllent/mailpit` (optional, dev)            | v1.31                  |
 
 Versions follow Magento 2.4.9's system requirements: PHP 8.5, MariaDB 12.3
-(recommended), OpenSearch 3 (required: Magento has no database search).
+(recommended), OpenSearch 3 (required: Magento has no database search, and
+the installer only accepts `opensearch` or `elasticsearch8`).
 There is no maintained Mage-OS Docker image (`mage-os/dockerfiles` is empty),
 so `image/Dockerfile` builds one: Mage-OS installed with Composer from
 `repo.mage-os.org`, dependency injection compiled and static content
@@ -34,7 +35,8 @@ Requirements
   upgrades and image builds. With 4 GB the kernel killed processes (OpenSearch,
   other containers) during installs.
 - **Disk:** about 5 GB for images and volumes, plus room for builds. OpenSearch
-  refuses to create indices when its disk is over 90–95% full.
+  blocks index creation over 95% and shard allocation over 90% of its own
+  disk (the host's disk with `overrides/local-dirs.yaml`).
 - Development: ports 8103, 8403 and 8025 free on the host.
 - Production: a server with ports 80 and 443 reachable, and a DNS record for
   the store's domain pointing to it.
@@ -55,7 +57,9 @@ docker compose logs -f setup   # wait for "==> Done"
 - Mailpit (every email the store sends): http://localhost:8025
 
 The development template builds a separate image (`mageos-fpm-dev`) without
-the admin two-factor authentication module (`Magento_TwoFactorAuth`).
+the admin two-factor authentication module (`Magento_TwoFactorAuth`): 2FA
+can only be turned off by disabling the module, which needs a recompile
+(`MAGEOS_DISABLE_MODULES`). Production keeps 2FA.
 
 Production
 ----------
@@ -250,6 +254,9 @@ Notes:
   reports the installer's own cache configuration as invalid (500).
 - Only `en_US` is installed; other languages need language packs, added to the
   image with `MAGEOS_LOCALES`.
+- Mage-OS has no Adobe IMS modules.
+- Customizing the image: the `sockets` extension (needed by `php-amqplib`)
+  needs `linux-headers` to build.
 - From inside the containers, the host machine is reachable as
   `host.docker.internal`.
 
