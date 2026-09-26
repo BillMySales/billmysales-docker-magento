@@ -67,7 +67,8 @@ Production
 ```shell
 cp .env.prod.example .env
 # Fill in MAGE_URL, SITE_ADDRESS, DB_PASSWORD, DB_ROOT_PASSWORD,
-# MAGE_ADMIN_PASSWORD, MAGE_ADMIN_EMAIL, MAGE_ADMIN_PATH and the SMTP_* values.
+# MAGE_ADMIN_PASSWORD, MAGE_ADMIN_EMAIL and MAGE_ADMIN_PATH.
+# Recommended: the SMTP_* values (without SMTP_HOST no emails are sent).
 docker compose up -d
 ```
 
@@ -76,6 +77,8 @@ docker compose up -d
 - Behind an existing Traefik (no host ports), use `overrides/traefik.yaml`
   (see [Overrides](#overrides)).
 - Compose refuses to start while a required value is missing.
+- Configure SMTP (recommended, not required): without `SMTP_HOST` no emails
+  are sent (the image has no local mail server).
 - **Two-factor authentication is on**: the first admin login asks to set up a
   2FA provider (Google Authenticator by default), with a link sent by email,
   so configure SMTP first. The admin REST token endpoint also requires it.
@@ -213,9 +216,12 @@ Every variable is documented in `.env.prod.example`. Main groups:
   `HTTPS_PORT`.
 - **Credentials and admin** (required): `DB_PASSWORD`, `DB_ROOT_PASSWORD`,
   `MAGE_ADMIN_PASSWORD` (letters and numbers, 7+ characters),
-  `MAGE_ADMIN_EMAIL`, `MAGE_ADMIN_PATH`; `MAGE_ADMIN_USER`.
+  `MAGE_ADMIN_EMAIL`, `MAGE_ADMIN_PATH`; `MAGE_ADMIN_USER`. The admin user,
+  password and email are only used by the installer: changing them later
+  doesn't change the account.
 - **Store** (first install only): `MAGE_STORE_NAME`, `MAGE_LOCALE`,
-  `MAGE_CURRENCY` (default `CLP`), `MAGE_COUNTRY`; `PHP_TIMEZONE`.
+  `MAGE_CURRENCY` (default `CLP`), `MAGE_COUNTRY`; `PHP_TIMEZONE` (the store's
+  time zone on the first install, PHP's `date.timezone` on every start).
 - **Versions and image**: `MAGEOS_VERSION`, `PHP_VERSION`, `MAGEOS_IMAGE`,
   `MAGEOS_DISABLE_MODULES`, `MAGEOS_LOCALES` and `MAGEOS_THEMES` (static
   content built into the image: every locale/theme a store or admin user uses
